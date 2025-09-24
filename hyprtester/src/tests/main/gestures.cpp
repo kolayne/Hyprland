@@ -151,6 +151,7 @@ static bool test() {
     const std::string cursorPos1 = getFromSocket("/cursorpos");
     OK(getFromSocket("/dispatch plugin:test:gesture left,4"));
     const std::string cursorPos2 = getFromSocket("/cursorpos");
+    NLog::log("Cursor pos: 1:\n{}\n2:\n{}", cursorPos1, cursorPos2);
     // The cursor should have moved because of the gesture
     EXPECT(cursorPos1 != cursorPos2, true);
 
