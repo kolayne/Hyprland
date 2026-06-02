@@ -60,8 +60,20 @@ PHLWINDOW CWindowGroupTarget::window() const {
     return m_group->current();
 }
 
-eFullscreenMode CWindowGroupTarget::fullscreenMode() {
-    return m_group->current()->m_fullscreenState.internal;
+bool CWindowGroupTarget::isFullscreenLike() const {
+    return m_group->current()->m_fullscreenState.internal > FSMODE_NONE;
+}
+
+bool CWindowGroupTarget::isFullscreen() const {
+    return m_group->current()->m_fullscreenState.internal & FSMODE_FULLSCREEN;
+}
+
+bool CWindowGroupTarget::isEffectivelyMaximized() const {
+    return m_group->current()->m_fullscreenState.internal == FSMODE_MAXIMIZED;
+}
+
+bool CWindowGroupTarget::hasMaximizedBit() const {
+    return m_group->current()->m_fullscreenState.internal & FSMODE_MAXIMIZED;
 }
 
 void CWindowGroupTarget::setFullscreenMode(eFullscreenMode mode) {

@@ -21,7 +21,10 @@ namespace Layout {
         virtual bool                                                floating();
         virtual void                                                setFloating(bool x);
         virtual std::expected<SGeometryRequested, eGeometryFailure> desiredGeometry();
-        virtual eFullscreenMode                                     fullscreenMode();
+        virtual bool                                                isFullscreenLike() const override;
+        virtual bool                                                isFullscreen() const override;
+        virtual bool                                                isEffectivelyMaximized() const override;
+        virtual bool                                                hasMaximizedBit() const override;
         virtual void                                                setFullscreenMode(eFullscreenMode mode);
         virtual std::optional<Vector2D>                             minSize();
         virtual std::optional<Vector2D>                             maxSize();

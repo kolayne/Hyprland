@@ -206,11 +206,13 @@ void CGroup::setCurrent(size_t idx) {
     if (idx == m_current)
         return;
 
-    const auto FS_STATE  = m_target->fullscreenMode();
-    const auto WASFOCUS  = Desktop::focusState()->window() == current();
-    auto       oldWindow = m_windows.at(m_current).lock();
+    const bool RESTORE_FSMX     = m_target->hasMaximizedBit();
+    const bool RESTORE_FSFS     = m_target->isFullscreen();
+    const bool RESTORE_FS_STATE = RESTORE_FSMX || RESTORE_FSFS;
+    const auto WASFOCUS         = Desktop::focusState()->window() == current();
+    auto       oldWindow        = m_windows.at(m_current).lock();
 
-    if (FS_STATE != FSMODE_NONE)
+    if (RESTORE_FS_STATE)
         g_pCompositor->setWindowFullscreenInternal(oldWindow, FSMODE_NONE);
 
     m_current = std::clamp(idx, sc<size_t>(0), m_windows.size() - 1);
@@ -218,8 +220,9 @@ void CGroup::setCurrent(size_t idx) {
 
     auto newWindow = m_windows.at(m_current).lock();
 
-    if (FS_STATE != FSMODE_NONE) {
-        g_pCompositor->setWindowFullscreenInternal(newWindow, FS_STATE);
+    if (RESTORE_FS_STATE) {
+        const int MODE = (RESTORE_FSMX ? FSMODE_MAXIMIZED : 0) | (RESTORE_FSFS ? FSMODE_FULLSCREEN : 0);
+        g_pCompositor->setWindowFullscreenInternal(newWindow, sc<eFullscreenMode>(MODE));
         newWindow->m_target->warpPositionSize();
         oldWindow->m_target->setPositionGlobal(newWindow->m_target->position()); // TODO: this is a hack and sucks
     }

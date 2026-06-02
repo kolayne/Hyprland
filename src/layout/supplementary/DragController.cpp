@@ -36,11 +36,11 @@ bool CDragStateController::draggingTiled() const {
 }
 
 bool CDragStateController::updateDragWindow() {
-    const auto DRAGGINGTARGET = m_target.lock();
-    const bool WAS_FULLSCREEN = DRAGGINGTARGET->fullscreenMode() != FSMODE_NONE;
+    const auto DRAGGINGTARGET      = m_target.lock();
+    const bool WAS_FULLSCREEN_LIKE = DRAGGINGTARGET->isFullscreenLike();
 
     if (m_dragThresholdReached) {
-        if (WAS_FULLSCREEN) {
+        if (WAS_FULLSCREEN_LIKE) {
             Log::logger->log(Log::DEBUG, "Dragging a fullscreen window");
             g_pCompositor->setWindowFullscreenInternal(DRAGGINGTARGET->window(), FSMODE_NONE);
         }
@@ -58,7 +58,7 @@ bool CDragStateController::updateDragWindow() {
     m_draggingTiled                   = false;
     m_draggingWindowOriginalFloatSize = DRAGGINGTARGET->lastFloatingSize();
 
-    if (WAS_FULLSCREEN && DRAGGINGTARGET->floating() && m_dragThresholdReached) {
+    if (WAS_FULLSCREEN_LIKE && DRAGGINGTARGET->floating() && m_dragThresholdReached) {
         const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
         DRAGGINGTARGET->setPositionGlobal(CBox{MOUSECOORDS - DRAGGINGTARGET->position().size() / 2.F, DRAGGINGTARGET->position().size()});
     } else if (!DRAGGINGTARGET->floating() && m_dragMode == MBIND_MOVE) {

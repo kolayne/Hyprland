@@ -155,9 +155,9 @@ namespace Layout::Tiled {
             std::optional<float> restoreColumnWidth;
         };
 
-        void                                syncFullscreenTargets();
-        SFullscreenScrollState*             fullscreenStateForTarget(SP<ITarget> target, eFullscreenMode targetFullscreenMode);
-        SFullscreenScrollState*             fullscreenStateForData(SP<SScrollingTargetData> target, eFullscreenMode targetFullscreenMode);
+        void                                syncFullscreenAndMaximizedTargets();
+        bool                                isFullscreenTarget(SP<ITarget> target) const;
+        bool                                isMaximizeTarget(SP<ITarget> target) const;
         SP<SScrollingTargetData>            fullscreenTargetDataForColumn(SP<SColumnData> col) const;
         bool                                isFullscreenTarget(SP<SScrollingTargetData> target) const;
         float                               fullscreenColumnWidth() const;

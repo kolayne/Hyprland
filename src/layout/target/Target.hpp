@@ -61,16 +61,40 @@ namespace Layout {
         virtual void         setLayoutManagedFullscreen(bool enabled);
 
         //
-        virtual bool                                                floating()                              = 0;
-        virtual void                                                setFloating(bool x)                     = 0;
-        virtual std::expected<SGeometryRequested, eGeometryFailure> desiredGeometry()                       = 0;
-        virtual eFullscreenMode                                     fullscreenMode()                        = 0;
-        virtual void                                                setFullscreenMode(eFullscreenMode mode) = 0;
-        virtual std::optional<Vector2D>                             minSize()                               = 0;
-        virtual std::optional<Vector2D>                             maxSize()                               = 0;
-        virtual void                                                damageEntire()                          = 0;
-        virtual void                                                warpPositionSize()                      = 0;
-        virtual void                                                onUpdateSpace()                         = 0;
+        virtual bool                                                floating()          = 0;
+        virtual void                                                setFloating(bool x) = 0;
+        virtual std::expected<SGeometryRequested, eGeometryFailure> desiredGeometry()   = 0;
+        /**
+         * Returns `true` if the target is in a fullscreen-like mode, i.e., it is displayed over all tiling windows.
+         * Decorations/bars may be visible (if maximized mode) or hidden (if fullscreen mode).
+         */
+        virtual bool isFullscreenLike() const = 0;
+        /**
+         * Returns `true` if the target is in the fullscreen mode, i.e., it is displayed over all tiling windows
+         * and decorations/bars.
+         */
+        virtual bool isFullscreen() const = 0;
+        /**
+         * Returns `true` if the target is displayed over all tiling windows, but decorations/bars are not hidden.
+         * This is the case when the window is maximized but is not fullscreen.
+         *
+         * If you want to check for the maximized bit, use `.hasMaximizedBit()`.
+         */
+        virtual bool isEffectivelyMaximized() const = 0;
+        /**
+         * Returns `true` if the target is maximized. It may be fullscreen at the same time, in which case
+         * it is treated by most of Hyprland as if it's just fullscreen.
+         *
+         * If you want to check if the target is effectively maximized (i.e., another behavior is not taking over),
+         * use `.isEffectivelyMaximized()`.
+         */
+        virtual bool                    hasMaximizedBit() const                 = 0;
+        virtual void                    setFullscreenMode(eFullscreenMode mode) = 0;
+        virtual std::optional<Vector2D> minSize()                               = 0;
+        virtual std::optional<Vector2D> maxSize()                               = 0;
+        virtual void                    damageEntire()                          = 0;
+        virtual void                    warpPositionSize()                      = 0;
+        virtual void                    onUpdateSpace()                         = 0;
 
       protected:
         ITarget() = default;

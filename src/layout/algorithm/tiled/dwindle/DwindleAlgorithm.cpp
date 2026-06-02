@@ -266,7 +266,7 @@ void CDwindleAlgorithm::removeTarget(SP<ITarget> target) {
         return;
     }
 
-    if (target->fullscreenMode() != FSMODE_NONE)
+    if (target->isFullscreenLike())
         g_pCompositor->setWindowFullscreenInternal(target->window(), FSMODE_NONE);
 
     const auto PPARENT = PNODE->pParent;
@@ -739,7 +739,7 @@ bool CDwindleAlgorithm::toggleSplit(SP<SDwindleNodeData> x) {
     if (!x || !x->pParent)
         return false;
 
-    if (x->pTarget->fullscreenMode() != FSMODE_NONE)
+    if (x->pTarget->isFullscreenLike())
         return false;
 
     x->pParent->splitTop = !x->pParent->splitTop;
@@ -750,7 +750,7 @@ bool CDwindleAlgorithm::toggleSplit(SP<SDwindleNodeData> x) {
 }
 
 bool CDwindleAlgorithm::swapSplit(SP<SDwindleNodeData> x) {
-    if (x->pTarget->fullscreenMode() != FSMODE_NONE || !x->pParent)
+    if (x->pTarget->isFullscreenLike() || !x->pParent)
         return false;
 
     std::swap(x->pParent->children[0], x->pParent->children[1]);
@@ -764,7 +764,7 @@ void CDwindleAlgorithm::rotateSplit(SP<SDwindleNodeData> x, int angle) {
     if (!x || !x->pParent)
         return;
 
-    if (x->pTarget->fullscreenMode() != FSMODE_NONE)
+    if (x->pTarget->isFullscreenLike())
         return;
 
     // normalize the angle to multiples of 90 degrees
@@ -801,7 +801,7 @@ bool CDwindleAlgorithm::moveToRoot(SP<SDwindleNodeData> x, bool stable) {
     if (!x || !x->pParent)
         return false;
 
-    if (x->pTarget->fullscreenMode() != FSMODE_NONE)
+    if (x->pTarget->isFullscreenLike())
         return false;
 
     // already at root

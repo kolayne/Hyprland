@@ -10,6 +10,7 @@
 #include "../../Compositor.hpp"
 #include "../../render/Renderer.hpp"
 #include "../../desktop/state/FloatState.hpp"
+#include "desktop/Workspace.hpp"
 
 #include <hyprutils/utils/ScopeGuard.hpp>
 
@@ -43,10 +44,11 @@ void CWindowTarget::updatePos() {
     if (!m_space)
         return;
 
-    if (fullscreenMode() == FSMODE_FULLSCREEN && !layoutManagedFullscreen())
+    if (isFullscreen() && !layoutManagedFullscreen())
         return;
 
-    if (floating() && fullscreenMode() != FSMODE_MAXIMIZED) {
+    // TODO DON'T MERGE: what's the right condition here?
+    if (floating() && !isEffectivelyMaximized()) {
         m_window->m_position = m_box.logicalBox.pos();
         m_window->m_size     = m_box.logicalBox.size();
 
@@ -63,7 +65,8 @@ void CWindowTarget::updatePos() {
 
     // if we are in maximized, force the box to be max work area.
     // TODO: this shouldn't be here.
-    if (fullscreenMode() == FSMODE_MAXIMIZED && !layoutManagedFullscreen())
+    // TODO DON'T MERGE: what's the right condition here?
+    if ((isFullscreenLike() && !isFullscreen()) && !layoutManagedFullscreen())
         ITarget::setPositionGlobal({.logicalBox = m_space->workArea(floating())});
 
     if (!m_space->workspace())
@@ -83,7 +86,7 @@ void CWindowTarget::updatePos() {
         return;
     }
 
-    if ((fullscreenMode() == FSMODE_FULLSCREEN || fullscreenMode() == FSMODE_MAXIMIZED) && layoutManagedFullscreen()) {
+    if (isFullscreenLike() && layoutManagedFullscreen()) {
         CBox nodeBox   = m_box.logicalBox;
         CBox visualBox = m_box.visualBox.empty() ? nodeBox : m_box.visualBox;
         nodeBox.round();
@@ -100,7 +103,7 @@ void CWindowTarget::updatePos() {
         return;
     }
 
-    if (fullscreenMode() == FSMODE_FULLSCREEN && !layoutManagedFullscreen())
+    if (isFullscreen() && !layoutManagedFullscreen())
         return;
 
     g_pHyprRenderer->damageWindow(window());
@@ -136,7 +139,7 @@ void CWindowTarget::updatePos() {
 
         Vector2D          ratioPadding;
 
-        if ((*REQUESTEDRATIO).y != 0 && m_space->algorithm()->tiledTargets() <= 1 && fullscreenMode() == FSMODE_NONE) {
+        if ((*REQUESTEDRATIO).y != 0 && m_space->algorithm()->tiledTargets() <= 1 && !isFullscreenLike()) {
             const Vector2D originalSize = MONITOR_WORKAREA.size();
 
             const double   requestedRatio = (*REQUESTEDRATIO).x / (*REQUESTEDRATIO).y;
@@ -164,7 +167,7 @@ void CWindowTarget::updatePos() {
         calcSize = calcSize - GAPOFFSETTOPLEFT - GAPOFFSETBOTTOMRIGHT - ratioPadding;
     }
 
-    if (isPseudo() && fullscreenMode() == FSMODE_NONE) {
+    if (isPseudo() && !isFullscreenLike()) {
         // Calculate pseudo
         float scale = 1;
 
@@ -368,8 +371,20 @@ PHLWINDOW CWindowTarget::window() const {
     return m_window.lock();
 }
 
-eFullscreenMode CWindowTarget::fullscreenMode() {
-    return m_window->m_fullscreenState.internal;
+bool CWindowTarget::isFullscreenLike() const {
+    return m_window->m_fullscreenState.internal > FSMODE_NONE;
+}
+
+bool CWindowTarget::isFullscreen() const {
+    return m_window->m_fullscreenState.internal & FSMODE_FULLSCREEN;
+}
+
+bool CWindowTarget::isEffectivelyMaximized() const {
+    return m_window->m_fullscreenState.internal == FSMODE_MAXIMIZED;
+}
+
+bool CWindowTarget::hasMaximizedBit() const {
+    return m_window->m_fullscreenState.internal & FSMODE_MAXIMIZED;
 }
 
 void CWindowTarget::setFullscreenMode(eFullscreenMode mode) {

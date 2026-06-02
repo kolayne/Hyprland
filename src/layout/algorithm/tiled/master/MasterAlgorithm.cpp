@@ -211,7 +211,7 @@ void CMasterAlgorithm::removeTarget(SP<ITarget> target) {
     if (!PNODE)
         return;
 
-    if (target->fullscreenMode() != FSMODE_NONE)
+    if (target->isFullscreenLike())
         g_pCompositor->setWindowFullscreenInternal(target->window(), FSMODE_NONE);
 
     if (PNODE->isMaster && (MASTERSLEFT <= 1 || *SMALLSPLIT == 1)) {
