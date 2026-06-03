@@ -76,8 +76,20 @@ bool CWindowGroupTarget::hasMaximizedBit() const {
     return m_group->current()->m_fullscreenState.internal & FSMODE_MAXIMIZED;
 }
 
-void CWindowGroupTarget::setFullscreenMode(eFullscreenMode mode) {
-    m_group->current()->m_fullscreenState.internal = mode;
+void CWindowGroupTarget::setMaximizedBit(bool setOn) {
+    if (setOn) {
+        m_group->current()->m_fullscreenState.internal = sc<eFullscreenMode>(m_group->current()->m_fullscreenState.internal | FSMODE_MAXIMIZED);
+    } else {
+        m_group->current()->m_fullscreenState.internal = sc<eFullscreenMode>(m_group->current()->m_fullscreenState.internal & ~FSMODE_MAXIMIZED);
+    }
+}
+
+void CWindowGroupTarget::setInternalFullscreenBit(bool setOn) {
+    if (setOn) {
+        m_group->current()->m_fullscreenState.internal = sc<eFullscreenMode>(m_group->current()->m_fullscreenState.internal | FSMODE_FULLSCREEN);
+    } else {
+        m_group->current()->m_fullscreenState.internal = sc<eFullscreenMode>(m_group->current()->m_fullscreenState.internal & ~FSMODE_FULLSCREEN);
+    }
 }
 
 bool CWindowGroupTarget::layoutManagedFullscreen() const {

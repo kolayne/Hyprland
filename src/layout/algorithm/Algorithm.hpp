@@ -43,7 +43,8 @@ namespace Layout {
 
         void                          setTargetGeom(const CBox& box, SP<ITarget> target); // only for float
 
-        eFullscreenRequestResult      requestFullscreen(SP<ITarget> target, eFullscreenMode currentEffectiveMode, eFullscreenMode effectiveMode);
+        eMxFsRequestResult            setMaximizedBit(SP<ITarget> target, bool setOn);
+        eMxFsRequestResult            setInternalFullscreenBit(SP<ITarget> target, bool setOn);
         SP<ITarget>                   layoutFullscreenTarget() const;
         bool                          layoutFullscreenCoversMonitor() const;
 

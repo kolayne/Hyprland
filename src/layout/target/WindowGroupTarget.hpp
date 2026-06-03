@@ -25,7 +25,8 @@ namespace Layout {
         virtual bool                                                isFullscreen() const override;
         virtual bool                                                isEffectivelyMaximized() const override;
         virtual bool                                                hasMaximizedBit() const override;
-        virtual void                                                setFullscreenMode(eFullscreenMode mode);
+        virtual void                                                setMaximizedBit(bool setOn) override;
+        virtual void                                                setInternalFullscreenBit(bool setOn) override;
         virtual std::optional<Vector2D>                             minSize();
         virtual std::optional<Vector2D>                             maxSize();
         virtual void                                                damageEntire();

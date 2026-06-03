@@ -95,41 +95,42 @@ namespace Layout::Tiled {
         CScrollingAlgorithm();
         virtual ~CScrollingAlgorithm();
 
-        virtual void                     newTarget(SP<ITarget> target);
-        virtual void                     movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint = std::nullopt);
-        virtual void                     removeTarget(SP<ITarget> target);
+        virtual void                    newTarget(SP<ITarget> target);
+        virtual void                    movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint = std::nullopt);
+        virtual void                    removeTarget(SP<ITarget> target);
 
-        virtual void                     resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
-        virtual void                     recalculate(eRecalculateReason reason = RECALCULATE_REASON_UNKNOWN);
+        virtual void                    resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
+        virtual void                    recalculate(eRecalculateReason reason = RECALCULATE_REASON_UNKNOWN);
 
-        virtual SP<ITarget>              getNextCandidate(SP<ITarget> old);
+        virtual SP<ITarget>             getNextCandidate(SP<ITarget> old);
 
-        virtual Config::ErrorResult      layoutMsg(const std::string_view& sv);
-        virtual std::optional<Vector2D>  predictSizeForNewTarget();
+        virtual Config::ErrorResult     layoutMsg(const std::string_view& sv);
+        virtual std::optional<Vector2D> predictSizeForNewTarget();
 
-        virtual void                     swapTargets(SP<ITarget> a, SP<ITarget> b);
-        virtual void                     moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent);
+        virtual void                    swapTargets(SP<ITarget> a, SP<ITarget> b);
+        virtual void                    moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent);
 
-        virtual eFullscreenRequestResult requestFullscreen(const SFullscreenRequest& request);
-        virtual SP<ITarget>              layoutFullscreenTarget() const;
-        virtual bool                     layoutFullscreenCoversMonitor() const;
+        virtual eMxFsRequestResult      setMaximizedBit(SP<ITarget> target, bool setOn) override;
+        virtual eMxFsRequestResult      setInternalFullscreenBit(SP<ITarget> target, bool setOn) override;
+        virtual SP<ITarget>             layoutFullscreenTarget() const;
+        virtual bool                    layoutFullscreenCoversMonitor() const;
 
-        void                             moveTape(float delta);
-        void                             moveTapeNormalized(double delta);
-        void                             snapToGrid();
-        SP<SColumnData>                  snapToProjectedOffset(double projectedNormalizedOffset);
-        void                             focusColumn(SP<SColumnData> column);
-        SP<SColumnData>                  getColumnAtViewportCenter();
-        SP<SColumnData>                  currentColumn();
+        void                            moveTape(float delta);
+        void                            moveTapeNormalized(double delta);
+        void                            snapToGrid();
+        SP<SColumnData>                 snapToProjectedOffset(double projectedNormalizedOffset);
+        void                            focusColumn(SP<SColumnData> column);
+        SP<SColumnData>                 getColumnAtViewportCenter();
+        SP<SColumnData>                 currentColumn();
 
-        double                           primaryViewportSize();
-        double                           normalizedTapeOffset();
+        double                          primaryViewportSize();
+        double                          normalizedTapeOffset();
 
-        CBox                             usableArea() const;
-        SP<SScrollingTargetData>         dataFor(SP<ITarget> t) const;
+        CBox                            usableArea() const;
+        SP<SScrollingTargetData>        dataFor(SP<ITarget> t) const;
 
-        void                             inhibitScroll();
-        void                             uninhibitScroll();
+        void                            inhibitScroll();
+        void                            uninhibitScroll();
 
         enum eInputMode : uint8_t {
             INPUT_MODE_SOFT = 0,

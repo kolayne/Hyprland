@@ -45,7 +45,8 @@ namespace Layout {
 
         void                            setAlgorithmProvider(SP<CAlgorithm> algo);
         void                            recheckWorkArea();
-        eFullscreenRequestResult        setFullscreen(SP<ITarget> t, eFullscreenMode currentEffectiveMode, eFullscreenMode mode);
+        eMxFsRequestResult              setMaximizedBit(SP<ITarget> t, bool setOn);
+        eMxFsRequestResult              setInternalFullscreenBit(SP<ITarget> t, bool setOn);
 
         void                            moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent);
 

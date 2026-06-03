@@ -999,20 +999,26 @@ void CScrollingAlgorithm::expelTarget(SP<SScrollingTargetData> tdata, SP<SColumn
     m_scrollingData->centerOrFitCol(col);
 }
 
-eFullscreenRequestResult CScrollingAlgorithm::requestFullscreen(const SFullscreenRequest& request) {
-    if (!request.target || !m_parent || request.target->space() != m_parent->space())
-        return FULLSCREEN_REQUEST_DEFAULT;
+// TODO DON'T MERGE: is it safe that targets now end up in both `m_maximizeTargets` and `m_fullscreenTargets`?
 
-    const auto TDATA = dataFor(request.target);
+eMxFsRequestResult CScrollingAlgorithm::setInternalFullscreenBit(SP<ITarget> target, bool setOn) {
+    if (!target || !m_parent || target->space() != m_parent->space())
+        return MX_FS_REQUEST_DEFAULT;
+
+    const auto TDATA = dataFor(target);
     if (!TDATA)
-        return FULLSCREEN_REQUEST_DEFAULT;
+        return MX_FS_REQUEST_DEFAULT;
 
-    if (request.effectiveMode == FSMODE_FULLSCREEN) {
+    if (!setOn && !isFullscreenTarget(TDATA) && !target->layoutManagedFullscreen()) {
+        return MX_FS_REQUEST_DEFAULT;
+    }
+
+    if (setOn) {
         const auto CURRENT_COL = TDATA->column.lock();
 
-        if (!isFullscreenTarget(request.target)) {
+        if (!isFullscreenTarget(target)) {
             m_fullscreenTargets.emplace_back(
-                SFullscreenScrollState{.target = request.target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
+                SFullscreenScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
         }
 
         // more that one window in column
@@ -1035,17 +1041,32 @@ eFullscreenRequestResult CScrollingAlgorithm::requestFullscreen(const SFullscree
             // move it into view
             m_scrollingData->centerOrFitCol(CURRENT_COL);
         }
+    } else {
+        clearFullscreenTarget(m_fullscreenTargets, target);
+    }
 
-        request.target->setFullscreenMode(FSMODE_FULLSCREEN);
+    target->setInternalFullscreenBit(setOn);
+    return MX_FS_REQUEST_HANDLED_BY_LAYOUT;
+}
 
-        return FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT;
-    } else if (request.effectiveMode == FSMODE_MAXIMIZED) {
+eMxFsRequestResult CScrollingAlgorithm::setMaximizedBit(SP<ITarget> target, bool setOn) {
+    if (!target || !m_parent || target->space() != m_parent->space())
+        return MX_FS_REQUEST_DEFAULT;
 
+    const auto TDATA = dataFor(target);
+    if (!TDATA)
+        return MX_FS_REQUEST_DEFAULT;
+
+    if (!setOn && !isFullscreenTarget(TDATA) && !target->layoutManagedFullscreen()) {
+        return MX_FS_REQUEST_DEFAULT;
+    }
+
+    if (setOn) {
         const auto CURRENT_COL = TDATA->column.lock();
 
-        if (!isMaximizeTarget(request.target)) {
+        if (!isMaximizeTarget(target)) {
             m_maximizeTargets.emplace_back(
-                SFullscreenScrollState{.target = request.target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
+                SFullscreenScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
         }
 
         // more that one window in column
@@ -1068,20 +1089,12 @@ eFullscreenRequestResult CScrollingAlgorithm::requestFullscreen(const SFullscree
             // move it into view
             m_scrollingData->centerOrFitCol(CURRENT_COL);
         }
-
-        // set FS mode
-        request.target->setFullscreenMode(FSMODE_MAXIMIZED);
-
-        return FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT;
+    } else {
+        clearFullscreenTarget(m_maximizeTargets, target);
     }
 
-    if (isFullscreenTarget(TDATA) || request.target->layoutManagedFullscreen()) {
-        clearFullscreenTarget((request.target->isFullscreen() ? m_fullscreenTargets : m_maximizeTargets), request.target);
-        request.target->setFullscreenMode(FSMODE_NONE);
-        return request.effectiveMode == FSMODE_NONE ? FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT : FULLSCREEN_REQUEST_DEFAULT;
-    }
-
-    return FULLSCREEN_REQUEST_DEFAULT;
+    target->setMaximizedBit(setOn);
+    return MX_FS_REQUEST_HANDLED_BY_LAYOUT;
 }
 
 SP<ITarget> CScrollingAlgorithm::layoutFullscreenTarget() const {

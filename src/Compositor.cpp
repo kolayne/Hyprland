@@ -5,6 +5,7 @@
 #include "config/supplementary/executor/Executor.hpp"
 #include "debug/log/Logger.hpp"
 #include "desktop/DesktopTypes.hpp"
+#include "desktop/Workspace.hpp"
 #include "desktop/state/FocusState.hpp"
 #include "desktop/history/WindowHistoryTracker.hpp"
 #include "desktop/history/WorkspaceHistoryTracker.hpp"
@@ -2264,22 +2265,26 @@ void CCompositor::setWindowFullscreenState(const PHLWINDOW PWINDOW, Desktop::Vie
     // for fullscreen mode `FSMODE_MAXIMIZED|FSMODE_FULLSCREEN` (a window is maximized then fullscreened),
     // the effective mode is `FSMODE_FULLSCREEN` (2), since the window is rendered as a fullscreen window.
     // But when the latter window exists fullscreen, it will return to `FSMODE_MAXIMIZED`, rather than `FSMODE_NONE`.
-    const eFullscreenMode OLD_EFFECTIVE_MODE = sc<eFullscreenMode>(std::bit_floor(sc<uint8_t>(PWINDOW->m_fullscreenState.internal)));
-    const eFullscreenMode NEW_EFFECTIVE_MODE = sc<eFullscreenMode>(std::bit_floor(sc<uint8_t>(state.internal)));
 
-    PWORKSPACE->m_fullscreenMode      = NEW_EFFECTIVE_MODE;
-    PWORKSPACE->m_hasFullscreenWindow = NEW_EFFECTIVE_MODE != FSMODE_NONE;
+    PWORKSPACE->m_fullscreenMode      = state.internal; // TODO DON'T MERGE: this used to be effective mode. Analyze this field. Can it be removed completely?
+    PWORKSPACE->m_hasFullscreenWindow = state.internal != FSMODE_NONE;
 
     PWORKSPACE->setNoMembersAboveFullscreen();
 
-    const auto FULLSCREEN_REQUEST_RESULT = g_layoutManager->fullscreenRequestForTarget(PWINDOW->layoutTarget(), OLD_EFFECTIVE_MODE, NEW_EFFECTIVE_MODE);
-    const bool LAYOUT_HANDLED_FULLSCREEN = FULLSCREEN_REQUEST_RESULT == Layout::FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT;
+    int fullscreenRequestResult = Layout::MX_FS_REQUEST_HANDLED_BY_LAYOUT;
+    if ((PWINDOW->m_fullscreenState.internal & FSMODE_MAXIMIZED) != (state.internal & FSMODE_MAXIMIZED)) {
+        fullscreenRequestResult &= g_layoutManager->setMaximizedBit(PWINDOW->layoutTarget(), state.internal & FSMODE_MAXIMIZED);
+    }
+    if ((PWINDOW->m_fullscreenState.internal & FSMODE_FULLSCREEN) != (state.internal & FSMODE_FULLSCREEN)) {
+        fullscreenRequestResult &= g_layoutManager->setInternalFullscreenBit(PWINDOW->layoutTarget(), state.internal & FSMODE_FULLSCREEN);
+    }
+    const bool LAYOUT_HANDLED_FULLSCREEN = fullscreenRequestResult == Layout::MX_FS_REQUEST_HANDLED_BY_LAYOUT;
 
     if (!LAYOUT_HANDLED_FULLSCREEN) {
         PWINDOW->m_fullscreenState.internal = state.internal;
     }
 
-    g_pEventManager->postEvent(SHyprIPCEvent{.event = "fullscreen", .data = std::to_string(sc<int>(NEW_EFFECTIVE_MODE) != FSMODE_NONE)});
+    g_pEventManager->postEvent(SHyprIPCEvent{.event = "fullscreen", .data = std::to_string(state.internal != FSMODE_NONE)});
     Event::bus()->m_events.window.fullscreen.emit(PWINDOW);
 
     PWINDOW->m_ruleApplicator->propertiesChanged(Desktop::Rule::RULE_PROP_FULLSCREEN | Desktop::Rule::RULE_PROP_FULLSCREENSTATE_CLIENT |
@@ -2298,8 +2303,8 @@ void CCompositor::setWindowFullscreenState(const PHLWINDOW PWINDOW, Desktop::Vie
     // because the windows below fs are not visible obviously but because we update fullscreen fade which sets that
     // state later, it does it wrong
     PWORKSPACE->updateWindows();
-    PWORKSPACE->m_space->recalculate(FULLSCREEN_REQUEST_RESULT == Layout::FULLSCREEN_REQUEST_DEFAULT ? Layout::RECALCULATE_REASON_TOGGLE_DEFAULT_HANDLED_FULLSCREEN :
-                                                                                                       Layout::RECALCULATE_REASON_TOGGLE_LAYOUT_HANDLED_FULLSCREEN);
+    PWORKSPACE->m_space->recalculate(fullscreenRequestResult == Layout::MX_FS_REQUEST_DEFAULT ? Layout::RECALCULATE_REASON_TOGGLE_DEFAULT_HANDLED_FULLSCREEN :
+                                                                                                Layout::RECALCULATE_REASON_TOGGLE_LAYOUT_HANDLED_FULLSCREEN);
     PWORKSPACE->forceReportSizesToWindows();
 
     g_pInputManager->recheckIdleInhibitorStatus();
@@ -2313,7 +2318,7 @@ void CCompositor::setWindowFullscreenState(const PHLWINDOW PWINDOW, Desktop::Vie
     if (!LAYOUT_HANDLED_FULLSCREEN && (*PDIRECTSCANOUT == 1 || (*PDIRECTSCANOUT == 2 && PWINDOW->getContentType() == CONTENT_TYPE_GAME))) {
         auto surf = PWINDOW->getSolitaryResource();
         if (surf)
-            g_pHyprRenderer->setSurfaceScanoutMode(surf, NEW_EFFECTIVE_MODE != FSMODE_NONE ? PMONITOR->m_self.lock() : nullptr);
+            g_pHyprRenderer->setSurfaceScanoutMode(surf, state.internal != FSMODE_NONE ? PMONITOR->m_self.lock() : nullptr);
     }
 
     Config::monitorRuleMgr()->ensureVRR(PMONITOR);

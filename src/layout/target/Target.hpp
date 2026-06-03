@@ -88,13 +88,14 @@ namespace Layout {
          * If you want to check if the target is effectively maximized (i.e., another behavior is not taking over),
          * use `.isEffectivelyMaximized()`.
          */
-        virtual bool                    hasMaximizedBit() const                 = 0;
-        virtual void                    setFullscreenMode(eFullscreenMode mode) = 0;
-        virtual std::optional<Vector2D> minSize()                               = 0;
-        virtual std::optional<Vector2D> maxSize()                               = 0;
-        virtual void                    damageEntire()                          = 0;
-        virtual void                    warpPositionSize()                      = 0;
-        virtual void                    onUpdateSpace()                         = 0;
+        virtual bool                    hasMaximizedBit() const              = 0;
+        virtual void                    setMaximizedBit(bool setOn)          = 0;
+        virtual void                    setInternalFullscreenBit(bool setOn) = 0;
+        virtual std::optional<Vector2D> minSize()                            = 0;
+        virtual std::optional<Vector2D> maxSize()                            = 0;
+        virtual void                    damageEntire()                       = 0;
+        virtual void                    warpPositionSize()                   = 0;
+        virtual void                    onUpdateSpace()                      = 0;
 
       protected:
         ITarget() = default;

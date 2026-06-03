@@ -155,12 +155,36 @@ void CAlgorithm::moveTarget(const Vector2D& Δ, SP<ITarget> target) {
         m_floating->moveTarget(Δ, target);
 }
 
-eFullscreenRequestResult CAlgorithm::requestFullscreen(SP<ITarget> target, eFullscreenMode currentEffectiveMode, eFullscreenMode effectiveMode) {
+eMxFsRequestResult CAlgorithm::setMaximizedBit(SP<ITarget> target, bool setOn) {
     if (!target)
-        return FULLSCREEN_REQUEST_DEFAULT;
+        return MX_FS_REQUEST_DEFAULT;
 
-    const SFullscreenRequest request = {.target = target, .currentEffectiveMode = currentEffectiveMode, .effectiveMode = effectiveMode};
-    return target->floating() ? m_floating->requestFullscreen(request) : m_tiled->requestFullscreen(request);
+    const bool WAS_EFFECTIVELY_MAXIMIZED = target->isEffectivelyMaximized();
+
+    const auto RESULT = (target->floating() ? (IModeAlgorithm*)m_floating.get() : m_tiled.get())->setMaximizedBit(target, setOn);
+
+    if (WAS_EFFECTIVELY_MAXIMIZED && !setOn) {
+        // Exiting maximized and going back to tiling/floating
+        recenter(target);
+    }
+
+    return RESULT;
+}
+
+eMxFsRequestResult CAlgorithm::setInternalFullscreenBit(SP<ITarget> target, bool setOn) {
+    if (!target)
+        return MX_FS_REQUEST_DEFAULT;
+
+    const bool WAS_JUST_FULLSCREEN = target->isFullscreen() && !target->hasMaximizedBit();
+
+    const auto RESULT = (target->floating() ? (IModeAlgorithm*)m_floating.get() : m_tiled.get())->setInternalFullscreenBit(target, setOn);
+
+    if (WAS_JUST_FULLSCREEN && !setOn) {
+        // Exiting fullscreen and going back to tiling/floating
+        recenter(target);
+    }
+
+    return RESULT;
 }
 
 SP<ITarget> CAlgorithm::layoutFullscreenTarget() const {

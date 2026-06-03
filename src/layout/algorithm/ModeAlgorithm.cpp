@@ -15,9 +15,16 @@ std::optional<Vector2D> IModeAlgorithm::predictSizeForNewTarget() {
     return std::nullopt;
 }
 
-eFullscreenRequestResult IModeAlgorithm::requestFullscreen(const SFullscreenRequest& request) {
-    (void)request;
-    return FULLSCREEN_REQUEST_DEFAULT;
+eMxFsRequestResult IModeAlgorithm::setMaximizedBit(SP<ITarget> target, bool setOn) {
+    (void)target;
+    (void)setOn;
+    return MX_FS_REQUEST_DEFAULT;
+}
+
+eMxFsRequestResult IModeAlgorithm::setInternalFullscreenBit(SP<ITarget> target, bool setOn) {
+    (void)target;
+    (void)setOn;
+    return MX_FS_REQUEST_DEFAULT;
 }
 
 SP<ITarget> IModeAlgorithm::layoutFullscreenTarget() const {

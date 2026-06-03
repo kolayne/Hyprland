@@ -153,27 +153,44 @@ void CSpace::recalculate(eRecalculateReason reason) {
         m_algorithm->recalculate(reason);
 }
 
-eFullscreenRequestResult CSpace::setFullscreen(SP<ITarget> t, eFullscreenMode currentEffectiveMode, eFullscreenMode mode) {
+eMxFsRequestResult CSpace::setMaximizedBit(SP<ITarget> t, bool setOn) {
     if (!t)
-        return FULLSCREEN_REQUEST_DEFAULT;
+        return MX_FS_REQUEST_DEFAULT;
 
-    const auto REQUEST_RESULT = m_algorithm ? m_algorithm->requestFullscreen(t, currentEffectiveMode, mode) : FULLSCREEN_REQUEST_DEFAULT;
+    const auto REQUEST_RESULT = m_algorithm ? m_algorithm->setMaximizedBit(t, setOn) : MX_FS_REQUEST_DEFAULT;
 
-    t->setLayoutManagedFullscreen(REQUEST_RESULT == FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT && (mode == FSMODE_FULLSCREEN || mode == FSMODE_MAXIMIZED));
-    if (REQUEST_RESULT != FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT)
-        t->setFullscreenMode(mode);
-
-    if (REQUEST_RESULT == FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT) {
+    t->setLayoutManagedFullscreen(setOn && REQUEST_RESULT == MX_FS_REQUEST_HANDLED_BY_LAYOUT);
+    if (REQUEST_RESULT == MX_FS_REQUEST_HANDLED_BY_LAYOUT) {
         if (const auto WORKSPACE = workspace()) {
             WORKSPACE->m_fullscreenMode      = FSMODE_NONE;
             WORKSPACE->m_hasFullscreenWindow = false;
         }
+    } else {
+        t->setMaximizedBit(setOn);
     }
 
-    if (mode == FSMODE_NONE && m_algorithm && t->floating())
-        m_algorithm->recenter(t);
+    recalculate(REQUEST_RESULT == MX_FS_REQUEST_DEFAULT ? RECALCULATE_REASON_TOGGLE_DEFAULT_HANDLED_FULLSCREEN : RECALCULATE_REASON_TOGGLE_LAYOUT_HANDLED_FULLSCREEN);
 
-    recalculate(REQUEST_RESULT == FULLSCREEN_REQUEST_DEFAULT ? RECALCULATE_REASON_TOGGLE_DEFAULT_HANDLED_FULLSCREEN : RECALCULATE_REASON_TOGGLE_LAYOUT_HANDLED_FULLSCREEN);
+    return REQUEST_RESULT;
+}
+
+eMxFsRequestResult CSpace::setInternalFullscreenBit(SP<ITarget> t, bool setOn) {
+    if (!t)
+        return MX_FS_REQUEST_DEFAULT;
+
+    const auto REQUEST_RESULT = m_algorithm ? m_algorithm->setInternalFullscreenBit(t, setOn) : MX_FS_REQUEST_DEFAULT;
+
+    t->setLayoutManagedFullscreen(setOn && REQUEST_RESULT == MX_FS_REQUEST_HANDLED_BY_LAYOUT);
+    if (REQUEST_RESULT == MX_FS_REQUEST_HANDLED_BY_LAYOUT) {
+        if (const auto WORKSPACE = workspace()) {
+            WORKSPACE->m_fullscreenMode      = FSMODE_NONE;
+            WORKSPACE->m_hasFullscreenWindow = false;
+        }
+    } else {
+        t->setMaximizedBit(setOn);
+    }
+
+    recalculate(REQUEST_RESULT == MX_FS_REQUEST_DEFAULT ? RECALCULATE_REASON_TOGGLE_DEFAULT_HANDLED_FULLSCREEN : RECALCULATE_REASON_TOGGLE_LAYOUT_HANDLED_FULLSCREEN);
 
     return REQUEST_RESULT;
 }

@@ -94,11 +94,18 @@ void CLayoutManager::endDragTarget() {
     m_dragStateController->dragEnd();
 }
 
-eFullscreenRequestResult CLayoutManager::fullscreenRequestForTarget(SP<ITarget> target, eFullscreenMode currentEffectiveMode, eFullscreenMode effectiveMode) {
+eMxFsRequestResult CLayoutManager::setMaximizedBit(SP<ITarget> target, bool setOn) {
     if (target && target->space())
-        return target->space()->setFullscreen(target, currentEffectiveMode, effectiveMode);
+        return target->space()->setMaximizedBit(target, setOn);
 
-    return FULLSCREEN_REQUEST_DEFAULT;
+    return MX_FS_REQUEST_DEFAULT;
+}
+
+eMxFsRequestResult CLayoutManager::setInternalFullscreenBit(SP<ITarget> target, bool setOn) {
+    if (target && target->space())
+        return target->space()->setInternalFullscreenBit(target, setOn);
+
+    return MX_FS_REQUEST_DEFAULT;
 }
 
 void CLayoutManager::switchTargets(SP<ITarget> a, SP<ITarget> b, bool preserveFocus) {

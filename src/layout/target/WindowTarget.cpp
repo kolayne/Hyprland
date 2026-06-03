@@ -387,11 +387,26 @@ bool CWindowTarget::hasMaximizedBit() const {
     return m_window->m_fullscreenState.internal & FSMODE_MAXIMIZED;
 }
 
-void CWindowTarget::setFullscreenMode(eFullscreenMode mode) {
-    if (floating() && m_window->m_fullscreenState.internal == FSMODE_NONE)
-        rememberFloatingSize(m_box.logicalBox.size());
+void CWindowTarget::setMaximizedBit(bool setOn) {
+    if (setOn) {
+        if (floating() && !isFullscreenLike())
+            rememberFloatingSize(m_box.logicalBox.size());
 
-    m_window->m_fullscreenState.internal = mode;
+        m_window->m_fullscreenState.internal = sc<eFullscreenMode>(m_window->m_fullscreenState.internal | FSMODE_MAXIMIZED);
+    } else {
+        m_window->m_fullscreenState.internal = sc<eFullscreenMode>(m_window->m_fullscreenState.internal & ~FSMODE_MAXIMIZED);
+    }
+}
+
+void CWindowTarget::setInternalFullscreenBit(bool setOn) {
+    if (setOn) {
+        if (floating() && !isFullscreenLike())
+            rememberFloatingSize(m_box.logicalBox.size());
+
+        m_window->m_fullscreenState.internal = sc<eFullscreenMode>(m_window->m_fullscreenState.internal | FSMODE_FULLSCREEN);
+    } else {
+        m_window->m_fullscreenState.internal = sc<eFullscreenMode>(m_window->m_fullscreenState.internal & ~FSMODE_FULLSCREEN);
+    }
 }
 
 std::optional<Vector2D> CWindowTarget::minSize() {

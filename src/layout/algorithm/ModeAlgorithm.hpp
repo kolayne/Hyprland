@@ -14,12 +14,6 @@ namespace Layout {
     class ITarget;
     class CAlgorithm;
 
-    struct SFullscreenRequest {
-        SP<ITarget>     target;
-        eFullscreenMode currentEffectiveMode = static_cast<eFullscreenMode>(0);
-        eFullscreenMode effectiveMode        = static_cast<eFullscreenMode>(0);
-    };
-
     class IModeAlgorithm {
       public:
         virtual ~IModeAlgorithm() = default;
@@ -51,8 +45,9 @@ namespace Layout {
         // optional: predict new window's size
         virtual std::optional<Vector2D> predictSizeForNewTarget();
 
-        // optional: allow algorithms to own fullscreen semantics for a target.
-        virtual eFullscreenRequestResult requestFullscreen(const SFullscreenRequest& request);
+        // optional: allow algorithms to own maximize/fullscreen semantics for a target.
+        virtual eMxFsRequestResult setMaximizedBit(SP<ITarget> target, bool setOn);
+        virtual eMxFsRequestResult setInternalFullscreenBit(SP<ITarget> target, bool setOn);
 
         // optional: expose an algorithm-owned fullscreen target and whether it is monitor-exclusive.
         virtual SP<ITarget> layoutFullscreenTarget() const;
