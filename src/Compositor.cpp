@@ -2275,11 +2275,9 @@ void CCompositor::setWindowFullscreenState(const PHLWINDOW PWINDOW, Desktop::Vie
     const auto FULLSCREEN_REQUEST_RESULT = g_layoutManager->fullscreenRequestForTarget(PWINDOW->layoutTarget(), OLD_EFFECTIVE_MODE, NEW_EFFECTIVE_MODE);
     const bool LAYOUT_HANDLED_FULLSCREEN = FULLSCREEN_REQUEST_RESULT == Layout::FULLSCREEN_REQUEST_HANDLED_BY_LAYOUT;
 
-    if (LAYOUT_HANDLED_FULLSCREEN) {
-        PWORKSPACE->m_fullscreenMode      = FSMODE_NONE;
-        PWORKSPACE->m_hasFullscreenWindow = false;
-    } else
+    if (!LAYOUT_HANDLED_FULLSCREEN) {
         PWINDOW->m_fullscreenState.internal = state.internal;
+    }
 
     g_pEventManager->postEvent(SHyprIPCEvent{.event = "fullscreen", .data = std::to_string(sc<int>(NEW_EFFECTIVE_MODE) != FSMODE_NONE)});
     Event::bus()->m_events.window.fullscreen.emit(PWINDOW);
@@ -2289,20 +2287,6 @@ void CCompositor::setWindowFullscreenState(const PHLWINDOW PWINDOW, Desktop::Vie
 
     PWINDOW->updateDecorationValues();
     g_layoutManager->recalculateMonitor(PMONITOR, Layout::CLayoutManager::RECALCULATE_MONITOR_REASON_TOGGLE_FULLSCREEN);
-
-    // make all windows and layers on the same workspace under the fullscreen window
-    for (auto const& w : m_windows) {
-        if (w->m_workspace == PWORKSPACE) {
-            if (!w->isFullscreen() && !w->m_fadingOut && !w->m_pinned)
-                w->m_createdOverFullscreen = false;
-
-            w->updateFullscreenInputState();
-        }
-    }
-    for (auto const& ls : m_layers) {
-        if (ls->m_monitor == PMONITOR)
-            ls->m_aboveFullscreen = false;
-    }
 
     if (!LAYOUT_HANDLED_FULLSCREEN)
         g_pDesktopAnimationManager->setFullscreenFadeAnimation(
