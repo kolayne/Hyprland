@@ -1283,3 +1283,30 @@ TEST_CASE(monitorrule) {
 
     OK(getFromSocket("/output remove HEADLESS-3"));
 }
+
+TEST_CASE(user_maximize_then_client_fullscreen) {
+    ASSERT(!!Tests::spawnKitty("kitty"), true);
+
+    std::string active = getFromSocket("/activewindow");
+    EXPECT_CONTAINS(active, "fullscreen: 0");
+    EXPECT_CONTAINS(active, "fullscreenClient: 0");
+
+    OK(getFromSocket("/dispatch hl.dsp.window.fullscreen({ mode = 'maximized', action = 'set' })"));
+    active = getFromSocket("/activewindow");
+    EXPECT_CONTAINS(active, "fullscreen: 1");
+    EXPECT_CONTAINS(active, "fullscreenClient: 1");
+
+    // Kitty requests to enter fullscreen, goes to maximized+fullscreen
+    OK(getFromSocket("/dispatch hl.dsp.send_shortcut({ mods = 'ctrl+shift', key = 'F11' })"));
+    EXPECT(waitForActiveWindow("kitty", '3'), true);
+    active = getFromSocket("/activewindow");
+    EXPECT_CONTAINS(active, "fullscreen: 3");
+    EXPECT_CONTAINS(active, "fullscreenClient: 3");
+
+    // Kitty requests to exit fullscreen, returns to maximized
+    OK(getFromSocket("/dispatch hl.dsp.send_shortcut({ mods = 'ctrl+shift', key = 'F11' })"));
+    EXPECT(waitForActiveWindow("kitty", '1'), true);
+    active = getFromSocket("/activewindow");
+    EXPECT_CONTAINS(active, "fullscreen: 1");
+    EXPECT_CONTAINS(active, "fullscreenClient: 1");
+}
