@@ -463,7 +463,7 @@ void CInputManager::mouseMoveUnified(uint32_t time, bool refocus, bool mouse, st
         return pWindowIdeal;
     };
 
-    const bool HAS_EXCLUSIVE_FULLSCREEN = (PWORKSPACE->m_hasFullscreenWindow && PWORKSPACE->m_fullscreenMode == FSMODE_FULLSCREEN) || PMONITOR->inFullscreenMode();
+    const bool HAS_EXCLUSIVE_FULLSCREEN = (PWORKSPACE->m_hasFullscreenWindow && PWORKSPACE->m_fullscreenMode & FSMODE_FULLSCREEN) || PMONITOR->inFullscreenMode();
 
     if (HAS_EXCLUSIVE_FULLSCREEN) {
         const auto IS_LS_UNFOCUSABLE = pFoundLayerSurface &&
@@ -500,7 +500,7 @@ void CInputManager::mouseMoveUnified(uint32_t time, bool refocus, bool mouse, st
 
     // then windows
     if (!foundSurface) {
-        if (PWORKSPACE->m_hasFullscreenWindow && PWORKSPACE->m_fullscreenMode == FSMODE_MAXIMIZED) {
+        if (PWORKSPACE->m_hasFullscreenWindow && PWORKSPACE->m_fullscreenMode & FSMODE_MAXIMIZED) {
             if (!foundSurface) {
                 if (PMONITOR->m_activeSpecialWorkspace) {
                     const auto& PWINDOWIDEAL = getWindowIdeal();

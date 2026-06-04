@@ -392,7 +392,7 @@ void IHyprRenderer::renderWorkspaceWindowsFullscreen(PHLMONITOR pMonitor, PHLWOR
             continue;
 
         if (shouldRenderWindow(w, pMonitor))
-            renderWindow(w, pMonitor, time, pWorkspace->m_fullscreenMode != FSMODE_FULLSCREEN, RENDER_PASS_ALL);
+            renderWindow(w, pMonitor, time, !(pWorkspace->m_fullscreenMode & FSMODE_FULLSCREEN), RENDER_PASS_ALL);
 
         if (w->m_workspace != pWorkspace)
             continue;

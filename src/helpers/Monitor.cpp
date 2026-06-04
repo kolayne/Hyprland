@@ -2328,7 +2328,7 @@ bool CMonitor::inHDR() {
 bool CMonitor::inFullscreenMode() {
     // Check special workspace first since it renders on top of regular workspaces
     if (m_activeSpecialWorkspace &&
-        ((m_activeSpecialWorkspace->m_hasFullscreenWindow && m_activeSpecialWorkspace->m_fullscreenMode == FSMODE_FULLSCREEN) ||
+        ((m_activeSpecialWorkspace->m_hasFullscreenWindow && m_activeSpecialWorkspace->m_fullscreenMode & FSMODE_FULLSCREEN) ||
          (m_activeSpecialWorkspace->m_space && m_activeSpecialWorkspace->m_space->algorithm() && m_activeSpecialWorkspace->m_space->algorithm()->layoutFullscreenCoversMonitor())))
         return true;
     return m_activeWorkspace &&
@@ -2338,7 +2338,7 @@ bool CMonitor::inFullscreenMode() {
 
 PHLWINDOW CMonitor::getFullscreenWindow() {
     // Check special workspace first since it renders on top of regular workspaces
-    if (m_activeSpecialWorkspace && m_activeSpecialWorkspace->m_hasFullscreenWindow && m_activeSpecialWorkspace->m_fullscreenMode == FSMODE_FULLSCREEN)
+    if (m_activeSpecialWorkspace && m_activeSpecialWorkspace->m_hasFullscreenWindow && m_activeSpecialWorkspace->m_fullscreenMode & FSMODE_FULLSCREEN)
         return m_activeSpecialWorkspace->getFullscreenWindow();
 
     if (m_activeSpecialWorkspace && m_activeSpecialWorkspace->m_space && m_activeSpecialWorkspace->m_space->algorithm() &&
@@ -2347,7 +2347,7 @@ PHLWINDOW CMonitor::getFullscreenWindow() {
         return TARGET ? TARGET->window() : nullptr;
     }
 
-    if (m_activeWorkspace && m_activeWorkspace->m_hasFullscreenWindow && m_activeWorkspace->m_fullscreenMode == FSMODE_FULLSCREEN)
+    if (m_activeWorkspace && m_activeWorkspace->m_hasFullscreenWindow && m_activeWorkspace->m_fullscreenMode & FSMODE_FULLSCREEN)
         return m_activeWorkspace->getFullscreenWindow();
 
     if (m_activeWorkspace && m_activeWorkspace->m_space && m_activeWorkspace->m_space->algorithm() && m_activeWorkspace->m_space->algorithm()->layoutFullscreenCoversMonitor()) {

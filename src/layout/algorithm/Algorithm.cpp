@@ -117,7 +117,7 @@ void CAlgorithm::recalculate(eRecalculateReason reason) {
         // prevent tiled fullscreen scrolling window from being brought into view when fullscreening a floating window in the same workspace.
         // TODO: this is a patch. Recommend handling setting of fullscreen windows's size and position in their fullscreen functions and removing this hack entirely.
         if (PFULLWINDOW) {
-            if (PWORKSPACE->m_fullscreenMode == FSMODE_FULLSCREEN) {
+            if (PWORKSPACE->m_fullscreenMode & FSMODE_FULLSCREEN) {
                 *PFULLWINDOW->m_realPosition = PMONITOR->m_position;
                 *PFULLWINDOW->m_realSize     = PMONITOR->m_size;
             } else if (PWORKSPACE->m_fullscreenMode == FSMODE_MAXIMIZED)

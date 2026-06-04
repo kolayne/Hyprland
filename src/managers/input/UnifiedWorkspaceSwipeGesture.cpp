@@ -306,6 +306,6 @@ void CUnifiedWorkspaceSwipeGesture::end() {
 
     // apply alpha
     for (auto const& ls : Desktop::focusState()->monitor()->m_layerSurfaceLayers[2]) {
-        *ls->m_alpha = pSwitchedTo->m_hasFullscreenWindow && pSwitchedTo->m_fullscreenMode == FSMODE_FULLSCREEN ? 0.f : 1.f;
+        *ls->m_alpha = pSwitchedTo->m_hasFullscreenWindow && pSwitchedTo->m_fullscreenMode & FSMODE_FULLSCREEN ? 0.f : 1.f;
     }
 }
