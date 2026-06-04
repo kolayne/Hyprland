@@ -632,8 +632,8 @@ CScrollingAlgorithm::CScrollingAlgorithm() {
 }
 
 CScrollingAlgorithm::~CScrollingAlgorithm() {
-    clearFullscreenTarget(m_maximizeTargets);
-    clearFullscreenTarget(m_fullscreenTargets);
+    clearMxFsTarget(false);
+    clearMxFsTarget(true);
     updateFullscreenFade(false);
 
     m_configCallback.reset();
@@ -727,7 +727,7 @@ void CScrollingAlgorithm::removeTarget(SP<ITarget> target) {
     if (!DATA)
         return;
 
-    clearFullscreenTarget((target->isFullscreen() ? m_fullscreenTargets : m_maximizeTargets), target);
+    clearMxFsTarget(target->isFullscreen(), target);
 
     if (!m_scrollingData->next(DATA->column.lock()) && DATA->column->targetDatas.size() <= 1) {
         // move the view if this is the last column
@@ -942,12 +942,12 @@ void CScrollingAlgorithm::syncFullscreenAndMaximizedTargets() {
     }
 
     // Maximized (mode = FSMODE_MAXIMIZED)
-    for (auto it = m_maximizeTargets.begin(); it != m_maximizeTargets.end();) {
+    for (auto it = m_effectivelyMaximizedTargets.begin(); it != m_effectivelyMaximizedTargets.end();) {
         const auto TARGET = it->target.lock();
 
         // TODO DON'T MERGE: what's the right condition here?
         if (!TARGET || !TARGET->layoutManagedFullscreen() || TARGET->isEffectivelyMaximized() || TARGET->space() != m_parent->space()) {
-            it = m_maximizeTargets.erase(it);
+            it = m_effectivelyMaximizedTargets.erase(it);
             continue;
         }
 
@@ -971,12 +971,12 @@ void CScrollingAlgorithm::syncFullscreenAndMaximizedTargets() {
 
             if (TARGET->isFullscreen()) {
                 if (!isFullscreenTarget(TARGET))
-                    m_fullscreenTargets.emplace_back(
-                        SFullscreenScrollState{.target = TARGET, .restoreColumnWidth = COL ? std::optional<float>{COL->getColumnWidth()} : std::nullopt});
+                    addMxFsScrollState(true,
+                        SMxFsScrollState{.target = TARGET, .restoreColumnWidth = COL ? std::optional<float>{COL->getColumnWidth()} : std::nullopt});
             } else {
-                if (!isMaximizeTarget(TARGET))
-                    m_maximizeTargets.emplace_back(
-                        SFullscreenScrollState{.target = TARGET, .restoreColumnWidth = COL ? std::optional<float>{COL->getColumnWidth()} : std::nullopt});
+                if (!isEffectivelyMaximizedTarget(TARGET))
+                    addMxFsScrollState(false,
+                        SMxFsScrollState{.target = TARGET, .restoreColumnWidth = COL ? std::optional<float>{COL->getColumnWidth()} : std::nullopt});
             }
 
             COL->setColumnWidth((TARGET->isFullscreen() ? fullscreenColumnWidth() : 1.F));
@@ -988,8 +988,8 @@ bool CScrollingAlgorithm::isFullscreenTarget(SP<ITarget> target) const {
     return std::ranges::any_of(m_fullscreenTargets, [&target](const auto& state) { return state.target.lock() == target; });
 }
 
-bool CScrollingAlgorithm::isMaximizeTarget(SP<ITarget> target) const {
-    return std::ranges::any_of(m_maximizeTargets, [&target](const auto& state) { return state.target.lock() == target; });
+bool CScrollingAlgorithm::isEffectivelyMaximizedTarget(SP<ITarget> target) const {
+    return std::ranges::any_of(m_effectivelyMaximizedTargets, [&target](const auto& state) { return state.target.lock() == target; });
 }
 
 void CScrollingAlgorithm::expelTarget(SP<SScrollingTargetData> tdata, SP<SColumnData> srcCol, std::optional<int64_t> insertIdx) {
@@ -998,8 +998,6 @@ void CScrollingAlgorithm::expelTarget(SP<SScrollingTargetData> tdata, SP<SColumn
     col->add(tdata);
     m_scrollingData->centerOrFitCol(col);
 }
-
-// TODO DON'T MERGE: is it safe that targets now end up in both `m_maximizeTargets` and `m_fullscreenTargets`?
 
 eMxFsRequestResult CScrollingAlgorithm::setInternalFullscreenBit(SP<ITarget> target, bool setOn) {
     if (!target || !m_parent || target->space() != m_parent->space())
@@ -1017,8 +1015,8 @@ eMxFsRequestResult CScrollingAlgorithm::setInternalFullscreenBit(SP<ITarget> tar
         const auto CURRENT_COL = TDATA->column.lock();
 
         if (!isFullscreenTarget(target)) {
-            m_fullscreenTargets.emplace_back(
-                SFullscreenScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
+            addMxFsScrollState(true,
+                SMxFsScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
         }
 
         // more that one window in column
@@ -1042,7 +1040,7 @@ eMxFsRequestResult CScrollingAlgorithm::setInternalFullscreenBit(SP<ITarget> tar
             m_scrollingData->centerOrFitCol(CURRENT_COL);
         }
     } else {
-        clearFullscreenTarget(m_fullscreenTargets, target);
+        clearMxFsTarget(true, target);
     }
 
     target->setInternalFullscreenBit(setOn);
@@ -1064,9 +1062,9 @@ eMxFsRequestResult CScrollingAlgorithm::setMaximizedBit(SP<ITarget> target, bool
     if (setOn) {
         const auto CURRENT_COL = TDATA->column.lock();
 
-        if (!isMaximizeTarget(target)) {
-            m_maximizeTargets.emplace_back(
-                SFullscreenScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
+        if (!isEffectivelyMaximizedTarget(target)) {
+            addMxFsScrollState(false,
+                SMxFsScrollState{.target = target, .restoreColumnWidth = CURRENT_COL ? std::optional<float>{CURRENT_COL->getColumnWidth()} : std::nullopt});
         }
 
         // more that one window in column
@@ -1090,7 +1088,7 @@ eMxFsRequestResult CScrollingAlgorithm::setMaximizedBit(SP<ITarget> target, bool
             m_scrollingData->centerOrFitCol(CURRENT_COL);
         }
     } else {
-        clearFullscreenTarget(m_maximizeTargets, target);
+        clearMxFsTarget(false, target);
     }
 
     target->setMaximizedBit(setOn);
@@ -1234,22 +1232,29 @@ void CScrollingAlgorithm::updateFullscreenFade(bool coversMonitor) {
                                                            coversMonitor ? CDesktopAnimationManager::ANIMATION_TYPE_IN : CDesktopAnimationManager::ANIMATION_TYPE_OUT);
 }
 
-void CScrollingAlgorithm::clearFullscreenTarget(std::vector<SFullscreenScrollState>& fullscreenTargetList, SP<ITarget> target) {
-    bool cleared = false;
+void CScrollingAlgorithm::addMxFsScrollState(bool toFullscreenList, SMxFsScrollState fss) {
+    std::vector<SMxFsScrollState>& targetList = toFullscreenList ? m_fullscreenTargets : m_effectivelyMaximizedTargets;
 
-    auto clear = [&](SP<ITarget> t) {
+    // This target may be in the other list
+    clearMxFsTarget(!toFullscreenList, fss.target.lock());
+    targetList.push_back(std::move(fss));
+}
+
+void CScrollingAlgorithm::clearMxFsTarget(bool fromFullscreenList, SP<ITarget> target) {
+    auto clear = [](SP<ITarget> t) {
         t->setLayoutManagedFullscreen(false);
         if (t->window())
             t->window()->m_layoutFlags.cantLockCursor = false;
-        cleared = true;
     };
 
-    for (auto it = fullscreenTargetList.begin(); it != fullscreenTargetList.end();) {
+    std::vector<SMxFsScrollState>& targetList = fromFullscreenList ? m_fullscreenTargets : m_effectivelyMaximizedTargets;
+
+    for (auto it = targetList.begin(); it != targetList.end();) {
         const auto TARGET = it->target.lock();
 
         if (!TARGET || (target && TARGET != target)) {
             if (!TARGET)
-                it = fullscreenTargetList.erase(it);
+                it = targetList.erase(it);
             else
                 ++it;
             continue;
@@ -1262,7 +1267,7 @@ void CScrollingAlgorithm::clearFullscreenTarget(std::vector<SFullscreenScrollSta
         if (const auto COL = TDATA ? TDATA->column.lock() : nullptr; COL && it->restoreColumnWidth)
             COL->setColumnWidth(*it->restoreColumnWidth);
 
-        it = fullscreenTargetList.erase(it);
+        it = targetList.erase(it);
     }
 
     if (target && target->layoutManagedFullscreen())

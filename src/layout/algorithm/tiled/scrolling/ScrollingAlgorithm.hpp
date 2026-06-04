@@ -151,20 +151,22 @@ namespace Layout::Tiled {
 
         eScrollDirection getDynamicDirection();
 
-        struct SFullscreenScrollState {
+        struct SMxFsScrollState {
             WP<ITarget>          target;
             std::optional<float> restoreColumnWidth;
         };
 
         void                                syncFullscreenAndMaximizedTargets();
         bool                                isFullscreenTarget(SP<ITarget> target) const;
-        bool                                isMaximizeTarget(SP<ITarget> target) const;
+        bool                                isEffectivelyMaximizedTarget(SP<ITarget> target) const;
         SP<SScrollingTargetData>            fullscreenTargetDataForColumn(SP<SColumnData> col) const;
         bool                                isFullscreenTarget(SP<SScrollingTargetData> target) const;
         float                               fullscreenColumnWidth() const;
         bool                                fullscreenColumnCoversMonitor(SP<SColumnData> col) const;
         void                                updateFullscreenFade(bool coversMonitor);
-        void                                clearFullscreenTarget(std::vector<SFullscreenScrollState>& fullscreenTargetList, SP<ITarget> target = nullptr);
+        // TODO DON'T MERGE: instead of passing the first parameter indicating which list to use, can't we just check the target's state?
+        void                                addMxFsScrollState(bool toFullscreenList, SMxFsScrollState fss);
+        void                                clearMxFsTarget(bool fromFullscreenList, SP<ITarget> target = nullptr);
 
         SP<SScrollingTargetData>            findBestNeighbor(SP<SScrollingTargetData> pCurrent, SP<SColumnData> pTargetCol);
         SP<SScrollingTargetData>            closestNode(const Vector2D& posGlobglobgabgalab);
@@ -177,8 +179,8 @@ namespace Layout::Tiled {
 
         float                               defaultColumnWidth();
 
-        std::vector<SFullscreenScrollState> m_fullscreenTargets;
-        std::vector<SFullscreenScrollState> m_maximizeTargets;
+        std::vector<SMxFsScrollState> m_fullscreenTargets;
+        std::vector<SMxFsScrollState> m_effectivelyMaximizedTargets;
         bool                                m_lastFullscreenCover = false;
 
         friend struct SScrollingData;
