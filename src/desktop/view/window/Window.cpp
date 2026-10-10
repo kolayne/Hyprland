@@ -239,7 +239,7 @@ bool CWindow::desktopComponent() const {
 }
 
 std::optional<CBox> CWindow::surfaceLogicalBox() const {
-    if (!mapped() || !acceptsInput())
+    if (!mapped() || !acceptsInput() || !alphaNonZero())
         return std::nullopt;
 
     return getWindowMainSurfaceBox();
