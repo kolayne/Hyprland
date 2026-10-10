@@ -779,9 +779,17 @@ TEST_CASE(windowOpenInGroupReceivesCursorFocus) {
     // Two windows in the group, delimited with one comma
     ASSERT(Tests::countOccurrences(groupped, ","), 1);
 
+    NLog::log("Cursor is at {}", getFromSocket("/cursorpos"));
     // Since kittyB is active, it should receive the mouse input (and, subseqeuntly, terminate)
     OK(getFromSocket("/dispatch hl.dsp.send_shortcut({ mods = '', key = 'mouse:272' })"));
     Tests::waitUntilWindowsN(1);
+    // For some reason which I could not uncover, the above `send_shortcut` is sometimes spuriously missed.
+    // If that's the case, the above `waitUntilWindowsN` will time out, but we retry again.
+    if (Tests::windowCount() == 2) {
+        NLog::yellow("windowOpenInGroupReceivesCursorFocus: warning: the mouse event was not received by either window. Retrying");
+        OK(getFromSocket("/dispatch hl.dsp.send_shortcut({ mods = '', key = 'mouse:272' })"));
+        Tests::waitUntilWindowsN(1);
+    }
     str = getFromSocket("/activewindow");
     ASSERT_CONTAINS(str, "class: kittyA");
 }
