@@ -170,7 +170,6 @@ void CGroup::add(PHLWINDOW w, std::optional<size_t> index) {
     }
 
     m_target->recalc();
-    g_pInputManager->sendMotionEventsToFocused();
 }
 
 void CGroup::replaceMember(PHLWINDOW oldWindow, PHLWINDOW newWindow, std::optional<Fullscreen::eFullscreenMode> internalMode, bool layoutManaged) {
