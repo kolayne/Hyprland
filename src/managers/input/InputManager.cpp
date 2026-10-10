@@ -201,8 +201,18 @@ void CInputManager::sendMotionEventsToFocused() {
         return;
 
     const auto POINTERSURF = g_pSeatManager->m_state.pointerFocus.lock();
+    std::cerr << "A1\n";
     if (POINTERSURF) {
         const auto POINTERHLSURF = Desktop::View::CWLSurface::fromResource(POINTERSURF);
+        std::cerr << "A2\n";
+        if (POINTERHLSURF) {
+            std::cerr << "A3\n";
+            if (!POINTERHLSURF->view()) {
+                std::cerr << "A4\n";
+            } else {
+                std::cerr << (int)POINTERHLSURF->view()->type() << std::endl;
+            }
+        }
 
         // Keep pointer focus on desktop components such as bars or popups that are
         // currently under the cursor. Keyboard focus changes should not steal it.
