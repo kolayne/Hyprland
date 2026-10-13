@@ -1021,14 +1021,18 @@ ActionResult Actions::changeWorkspace(PHLWORKSPACE ws) {
     if (!ws)
         return actionError("Invalid workspace", eActionErrorLevel::WARNING, eActionErrorCode::NO_TARGET);
 
-    static auto PHIDESPECIALONWORKSPACECHANGE = CConfigValue<Config::INTEGER>("binds:hide_special_on_workspace_change");
-    static auto PWORKSPACECENTERON            = CConfigValue<Config::INTEGER>("binds:workspace_center_on");
+    const static auto PHIDESPECIALONWORKSPACECHANGE = CConfigValue<Config::INTEGER>("binds:hide_special_on_workspace_change");
+    const static auto PWORKSPACECENTERON            = CConfigValue<Config::INTEGER>("binds:workspace_center_on");
+    const static auto PWARPONWORKSPACECHANGE        = CConfigValue<Config::INTEGER>("cursor:warp_on_change_workspace");
+    const static auto PWARPONMONITORCHANGE          = CConfigValue<Config::INTEGER>("cursor:warp_on_monitor_change");
 
-    const auto  PMONITOR = Desktop::focusState()->monitor();
+    const auto        PMONITOR = Desktop::focusState()->monitor();
     if (!PMONITOR)
         return actionError("No focused monitor", eActionErrorLevel::WARNING, eActionErrorCode::INVALID_STATE);
 
-    auto constraintGuard = g_pInputManager->pointerConstraints().suspend();
+    const auto OVERRIDE_WARP = ws->monitorID() == PMONITOR->id() || *PWARPONMONITORCHANGE == -1 ? *PWARPONWORKSPACECHANGE : *PWARPONMONITORCHANGE;
+
+    auto       constraintGuard = g_pInputManager->pointerConstraints().suspend();
 
     if (ws->type() == Workspace::eWorkspaceType::SPECIAL) {
         PMONITOR->setSpecialWorkspace(ws);
@@ -1059,7 +1063,7 @@ ActionResult Actions::changeWorkspace(PHLWORKSPACE ws) {
         } else
             Desktop::focusState()->rawWindowFocus(nullptr, Desktop::FOCUS_REASON_KEYBIND);
 
-        Pointer::pointerController()->warpTo(middle);
+        Pointer::pointerController()->warpTo(middle, OVERRIDE_WARP == 2);
     }
 
     if (!g_pInputManager->m_lastFocusOnLS) {
@@ -1069,17 +1073,12 @@ ActionResult Actions::changeWorkspace(PHLWORKSPACE ws) {
             g_pInputManager->simulateMouseMovement();
     }
 
-    const static auto PWARPONWORKSPACECHANGE = CConfigValue<Config::INTEGER>("cursor:warp_on_change_workspace");
-    const static auto PWARPONMONITORCHANGE   = CConfigValue<Config::INTEGER>("cursor:warp_on_monitor_change");
-
-    const auto        WARP = ws->monitorID() == PMONITOR->id() || *PWARPONMONITORCHANGE == -1 ? *PWARPONWORKSPACECHANGE : *PWARPONMONITORCHANGE;
-
-    if (WARP > 0) {
+    if (OVERRIDE_WARP > 0) {
         auto PLAST     = ws->getLastFocusedWindow();
         auto HLSurface = Desktop::View::CWLSurface::fromResource(g_pSeatManager->m_state.pointerFocus.lock());
 
         if (PLAST && (!HLSurface || HLSurface->view()->type() == Desktop::View::VIEW_TYPE_WINDOW))
-            PLAST->warpCursor(WARP == 2);
+            PLAST->warpCursor(OVERRIDE_WARP == 2);
     }
 
     return {};
