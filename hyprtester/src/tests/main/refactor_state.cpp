@@ -12,10 +12,10 @@
 
 using namespace Hyprutils::Utils;
 
-static constexpr const char* TEST_MONITOR_LEFT  = "HEADLESS-2";
-static constexpr const char* TEST_MONITOR_RIGHT = "HYPRTEST-REFACTOR-R";
+#define TEST_MONITOR_LEFT  "HEADLESS-2"
+#define TEST_MONITOR_RIGHT "HYPRTEST-REFACTOR-R"
 
-static bool                  waitForMonitorAvailable(const std::string& name) {
+static bool waitForMonitorAvailable(const std::string& name) {
     for (int i = 0; i < 50; ++i) {
         if (getFromSocket("/monitors all").contains(name))
             return true;
@@ -71,8 +71,10 @@ static bool prepareRefactorStateMonitors() {
 static void cleanupRefactorStateMonitors() {
     Tests::killAllWindows();
 
-    if (getFromSocket("/monitors all").contains(TEST_MONITOR_RIGHT))
-        getFromSocket(std::format("/output remove {}", TEST_MONITOR_RIGHT));
+    for (auto monitor : {TEST_MONITOR_LEFT, TEST_MONITOR_RIGHT}) {
+        if (getFromSocket("/monitors all").contains(monitor))
+            getFromSocket(std::format("/output remove {}", monitor));
+    }
 
     getFromSocket("/reload");
 }
@@ -258,10 +260,18 @@ SUBTEST(checkCursorWarpWhenSwitchingMonitor, bool noWarps, int warpOnChangeWorks
     OK(getFromSocket(conf));
 
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 300 })"));
+    auto resp = getFromSocket("/activeworkspace");
+    ASSERT_CONTAINS(resp, "workspace 300 (");
+    ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_LEFT);
+
+    // Switching: moving the cursor, and then check if it stayed or warped
     OK(getFromSocket("/dispatch hl.dsp.cursor.move({ x = 5, y = 5 })"));
     ASSERT(getFromSocket("/cursorpos"), "5, 5");
 
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 301 })"));
+    resp = getFromSocket("/activeworkspace");
+    ASSERT_CONTAINS(resp, "workspace 301 (");
+    ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_RIGHT);
     if (expectMove)
         EXPECT_NOT(getFromSocket("/cursorpos"), "5, 5");
     else
@@ -290,8 +300,8 @@ TEST_CASE(cursorWarpFocusOnMonitorChange) {
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = '301' })"));
     SPAWN_KITTY("kitty301"); // A window must exist on the workspace (bug #15649)
     OK(getFromSocket(std::format("/dispatch hl.dsp.focus({{ monitor = '{}' }})", TEST_MONITOR_LEFT)));
-    SPAWN_KITTY("kitty300"); // A window must exist on the workspace (bug #15649)
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = '300' })"));
+    SPAWN_KITTY("kitty300"); // A window must exist on the workspace (bug #15649)
 
     //                                             no_warps, W, M, expect_move
     //CALL_SUBTEST(checkCursorWarpWhenSwitchingMonitor, false, 0, -1, false); // BUG: fails!
