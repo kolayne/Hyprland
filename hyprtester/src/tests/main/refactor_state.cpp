@@ -264,10 +264,9 @@ SUBTEST(checkCursorWarpWhenSwitchingMonitor, bool noWarps, int warpOnChangeWorks
     ASSERT_CONTAINS(resp, "workspace 300 (");
     ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_LEFT);
 
-    // Switching: moving the cursor, and then check if it stayed or warped
+    // Move the cursor, then switch the workspace and check if the cursor stays or warps
     OK(getFromSocket("/dispatch hl.dsp.cursor.move({ x = 5, y = 5 })"));
     ASSERT(getFromSocket("/cursorpos"), "5, 5");
-
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 301 })"));
     resp = getFromSocket("/activeworkspace");
     ASSERT_CONTAINS(resp, "workspace 301 (");
