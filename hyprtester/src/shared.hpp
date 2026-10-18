@@ -177,7 +177,7 @@ inline std::map<std::string, std::shared_ptr<CTestCase>> testCases;
         if (const auto RESULT = expr; RESULT == (val)) {                                                                                                                           \
             MARK_TEST_FAILED("{}, expected not {}, got {}", #expr, val, RESULT);                                                                                                   \
         } else {                                                                                                                                                                   \
-            LOG_OK("{}. Got {}", #expr, val);                                                                                                                                      \
+            LOG_OK("{}. Got {} != {}", #expr, RESULT, val);                                                                                                                        \
         }                                                                                                                                                                          \
     } while (0)
 
@@ -188,7 +188,7 @@ inline std::map<std::string, std::shared_ptr<CTestCase>> testCases;
         if (!(std::abs(RESULT.x - ASSERTED.x) < 1e-6 && std::abs(RESULT.y - ASSERTED.y) < 1e-6)) {                                                                                 \
             MARK_TEST_FAILED("{}, expected [{}, {}], got [{}, {}]", #expr, ASSERTED.x, ASSERTED.y, RESULT.x, RESULT.y);                                                            \
         } else {                                                                                                                                                                   \
-            LOG_OK("{}. Got [{}, {}].", #expr, RESULT.x, RESULT.y);                                                                                                                \
+            LOG_OK("{}. Got [{}, {}]", #expr, RESULT.x, RESULT.y);                                                                                                                 \
         }                                                                                                                                                                          \
     } while (0)
 
@@ -197,34 +197,35 @@ inline std::map<std::string, std::shared_ptr<CTestCase>> testCases;
 
 #define EXPECT_CONTAINS(haystack, needle)                                                                                                                                          \
     if (const auto ASSERTED = needle; !std::string{haystack}.contains(ASSERTED)) {                                                                                                 \
-        NLog::red("Failed: {}{} should contain {} but doesn't. Source: {}@{}. Haystack is:\n{}", Colors::RESET, #haystack, #needle, __FILE__, __LINE__, std::string{haystack});    \
+        NLog::red("Failed: {}{} should contain '{}' but doesn't. Source: {}@{}. Haystack is:\n{}", Colors::RESET, #haystack, ASSERTED, __FILE__, __LINE__, std::string{haystack}); \
         MARK_TEST_FAILED_SILENT();                                                                                                                                                 \
     } else {                                                                                                                                                                       \
-        LOG_OK("{} contains {}.", #haystack, #needle);                                                                                                                             \
+        LOG_OK("{} contains {}", #haystack, ASSERTED);                                                                                                                             \
     }
 
 #define EXPECT_NOT_CONTAINS(haystack, needle)                                                                                                                                      \
-    if (std::string{haystack}.contains(needle)) {                                                                                                                                  \
-        NLog::red("Failed: {}{} shouldn't contain {} but does. Source: {}@{}. Haystack is:\n{}", Colors::RESET, #haystack, #needle, __FILE__, __LINE__, std::string{haystack});    \
+    if (const auto ASSERTED = needle; std::string{haystack}.contains(ASSERTED)) {                                                                                                  \
+        NLog::red("Failed: {}{} shouldn't contain '{}' but does. Source: {}@{}. Haystack is:\n{}", Colors::RESET, #haystack, ASSERTED, __FILE__, __LINE__, std::string{haystack}); \
         MARK_TEST_FAILED_SILENT();                                                                                                                                                 \
     } else {                                                                                                                                                                       \
-        LOG_OK("{} doesn't contain {}.", #haystack, #needle);                                                                                                                      \
+        LOG_OK("{} doesn't contain {}", #haystack, ASSERTED);                                                                                                                      \
     }
 
 #define EXPECT_STARTS_WITH(str, what)                                                                                                                                              \
-    if (!std::string{str}.starts_with(what)) {                                                                                                                                     \
-        NLog::red("Failed: {}{} should start with {} but doesn't. Source: {}@{}. String is:\n{}", Colors::RESET, #str, #what, __FILE__, __LINE__, std::string{str});               \
+    if (const auto ASSERTED = what; !std::string{str}.starts_with(ASSERTED)) {                                                                                                     \
+        NLog::red("Failed: {}{} should start with '{}' but doesn't. Source: {}@{}. String is:\n{}", Colors::RESET, #str, ASSERTED, __FILE__, __LINE__, std::string{str});          \
         MARK_TEST_FAILED_SILENT();                                                                                                                                                 \
     } else {                                                                                                                                                                       \
-        LOG_OK("{} starts with {}.", #str, #what);                                                                                                                                 \
+        LOG_OK("{} starts with '{}'", #str, ASSERTED);                                                                                                                             \
     }
 
 #define EXPECT_COUNT_STRING(str, what, no)                                                                                                                                         \
-    if (Tests::countOccurrences(str, what) != no) {                                                                                                                                \
-        NLog::red("Failed: {}{} should contain {} {} times, but doesn't. Source: {}@{}. String is:\n{}", Colors::RESET, #str, #what, no, __FILE__, __LINE__, std::string{str});    \
+    if (const auto ASSERTED = what; Tests::countOccurrences(str, ASSERTED) != no) {                                                                                                \
+        NLog::red("Failed: {}{} should contain '{}' {} times, but doesn't. Source: {}@{}. String is:\n{}", Colors::RESET, #str, ASSERTED, no, __FILE__, __LINE__,                  \
+                  std::string{str});                                                                                                                                               \
         MARK_TEST_FAILED_SILENT();                                                                                                                                                 \
     } else {                                                                                                                                                                       \
-        LOG_OK("{} contains {} {} times.", #str, #what, no);                                                                                                                       \
+        LOG_OK("{} contains '{}' {} times.", #str, ASSERTED, no);                                                                                                                  \
     }
 
 #define EXPECT_OK(x) EXPECT(x, "ok")

@@ -12,10 +12,10 @@
 
 using namespace Hyprutils::Utils;
 
-static constexpr const char* TEST_MONITOR_LEFT  = "HEADLESS-2";
-static constexpr const char* TEST_MONITOR_RIGHT = "HYPRTEST-REFACTOR-R";
+#define TEST_MONITOR_LEFT  "HEADLESS-2"
+#define TEST_MONITOR_RIGHT "HYPRTEST-REFACTOR-R"
 
-static bool                  waitForMonitorAvailable(const std::string& name) {
+static bool waitForMonitorAvailable(const std::string& name) {
     for (int i = 0; i < 50; ++i) {
         if (getFromSocket("/monitors all").contains(name))
             return true;
@@ -71,8 +71,10 @@ static bool prepareRefactorStateMonitors() {
 static void cleanupRefactorStateMonitors() {
     Tests::killAllWindows();
 
-    if (getFromSocket("/monitors all").contains(TEST_MONITOR_RIGHT))
-        getFromSocket(std::format("/output remove {}", TEST_MONITOR_RIGHT));
+    for (auto monitor : {TEST_MONITOR_LEFT, TEST_MONITOR_RIGHT}) {
+        if (getFromSocket("/monitors all").contains(monitor))
+            getFromSocket(std::format("/output remove {}", monitor));
+    }
 
     getFromSocket("/reload");
 }
@@ -251,6 +253,7 @@ TEST_CASE(pointerNoWarpsFocusesMonitorOnly) {
     EXPECT_NOT(getFromSocket("/cursorpos"), originalCursor);
 }
 
+// If you modify this test, please invite @kolayne to review your PR!
 SUBTEST(checkCursorWarpWhenSwitchingMonitor, bool noWarps, int warpOnChangeWorkspace, int warpOnMonitorChange, bool expectMove) {
     auto conf = std::format("/eval hl.config({{ cursor = {{ no_warps = {}, warp_on_change_workspace = {}, warp_on_monitor_change = {} }} }})", noWarps, warpOnChangeWorkspace,
                             warpOnMonitorChange);
@@ -258,14 +261,35 @@ SUBTEST(checkCursorWarpWhenSwitchingMonitor, bool noWarps, int warpOnChangeWorks
     OK(getFromSocket(conf));
 
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 300 })"));
+    auto resp = getFromSocket("/activeworkspace");
+    ASSERT_CONTAINS(resp, "workspace 300 (");
+    ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_LEFT);
+
+    // Move the cursor, then switch the workspace and check if the cursor stays or warps
     OK(getFromSocket("/dispatch hl.dsp.cursor.move({ x = 5, y = 5 })"));
     ASSERT(getFromSocket("/cursorpos"), "5, 5");
-
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 301 })"));
+    resp = getFromSocket("/activeworkspace");
+    ASSERT_CONTAINS(resp, "workspace 301 (");
+    ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_RIGHT);
     if (expectMove)
         EXPECT_NOT(getFromSocket("/cursorpos"), "5, 5");
     else
         EXPECT(getFromSocket("/cursorpos"), "5, 5");
+
+    // This block is commented out due to several bugs, see `TEST_CASE(cursorWarpFocusOnMonitorChange)` for details
+    /*
+    // Move back to the first workspace, the cursor should behave the same
+    OK(getFromSocket("/dispatch hl.dsp.cursor.move({ x = 5, y = 5 })"));
+    OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = 300 })"));
+    resp = getFromSocket("/activeworkspace");
+    ASSERT_CONTAINS(resp, "workspace 300 (");
+    ASSERT_CONTAINS(resp, ") on monitor " TEST_MONITOR_LEFT);
+    if (expectMove)
+        EXPECT_NOT(getFromSocket("/cursorpos"), "5, 5");
+    else
+        EXPECT(getFromSocket("/cursorpos"), "5, 5");
+    */
 
     // TODO: uncomment after #15649 is resolved. Might need an additional fix in ConfigActions to pass:
     // focusing with `hl.dsp.focus({ monitor = ... })` should trigger proper workspace switching.
@@ -282,16 +306,33 @@ SUBTEST(checkCursorWarpWhenSwitchingMonitor, bool noWarps, int warpOnChangeWorks
     */
 }
 
+// If you modify this test, please invite @kolayne to review your PR!
 TEST_CASE(cursorWarpFocusOnMonitorChange) {
     CScopeGuard guard = {[&]() { cleanupRefactorStateMonitors(); }};
     ASSERT(prepareRefactorStateMonitors(), true);
 
+    // This test should, ideally, should updated as follows:
+    // - Bind workspaces to outputs with workspace rules (`getFromSocket("/eval hl.workspace_rule(...)")`)
+    // - Uncomment the block in the subtest, so that we test cursor warp on workspace switch both ways (300->301 and 301->300)
+    // - Only leave a kitty on one of the workspaces, so that the subtest tests behavior of overrides for both empty and non-empty workspces.
+    //
+    // But there are at least two bugs preventing us from doing this:
+    // 1. Bug #15649 which breaks the focusing of an empty workspace with some of the config values we test.
+    // 2. A bug or bugs with workspace/window/monitor focusing that do not properly update `Desktop::focusState()`:
+    //    its `->monitor()` returns the wrong monitor when on one of the workspaces created below (either 300 or 301) if
+    //    that workspace/monitor got focused with `hl.dsp.focus({ workspace = ... })`
+    //    TODO NOW: Report this bug.
+    //    Note: this can be worked around in `checkCursorWarpWhenSwitchingMonitor` by replacing
+    //    `hl.dsp.focus({ workspace = ... })` with `hl.dsp.focus({ monitor = ... })` or, presumably, `hl.dsp.focus({ window = "class:..." })`
+    // 3. Some other bug. Further investigation is needed.
+    //
+    // After these are fixed, maybe we can also uncomment the `BUG: fails!` lines below, at least some of them should start working.
     OK(getFromSocket(std::format("/dispatch hl.dsp.focus({{ monitor = '{}' }})", TEST_MONITOR_RIGHT)));
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = '301' })"));
     SPAWN_KITTY("kitty301"); // A window must exist on the workspace (bug #15649)
     OK(getFromSocket(std::format("/dispatch hl.dsp.focus({{ monitor = '{}' }})", TEST_MONITOR_LEFT)));
-    SPAWN_KITTY("kitty300"); // A window must exist on the workspace (bug #15649)
     OK(getFromSocket("/dispatch hl.dsp.focus({ workspace = '300' })"));
+    SPAWN_KITTY("kitty300"); // A window must exist on the workspace (bug #15649)
 
     //                                             no_warps, W, M, expect_move
     //CALL_SUBTEST(checkCursorWarpWhenSwitchingMonitor, false, 0, -1, false); // BUG: fails!
